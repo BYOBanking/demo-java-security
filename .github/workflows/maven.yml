@@ -10,8 +10,8 @@ name: SonarQube Analyze
 
 on:
   push:
-    branches:
-    - '**'    # This will trigger the workflow on pushes to any branch
+    branches: 
+      - '**'  # This will trigger the workflow on pushes to any branch
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
@@ -29,7 +29,7 @@ jobs:
       uses: actions/setup-java@v3
       with:
         java-version: '17'
-        distribution: temurin
+        distribution: 'temurin'
         cache: maven
     - name: Cache SonarQube packages
       uses: actions/cache@v3
@@ -42,23 +42,43 @@ jobs:
       with:
         path: ~/.m2
         key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-        restore-keys: ${{ runner.os }}-m2
+        restore-keys: ${{ runner.os }}-m2          
     - name: Build with Maven and analyze with SonarQube
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    # Needed to get PR information, if any
-        SONAR_TOKEN: ${{ secrets.SONARQUBE_CLOUD_TOKEN }}
-        SONAR_HOST_URL: ${{ secrets.SONARQUBE_CLOUD_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
       run: |
-        mvn -B test -Pcoverage verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.branch.name=${{ github.head_ref || github.ref_name }} -Dsonar.javaOpts=-Xmx8192m  -Dsonar.scanner.debug=true -Dsonar.sources=. -Dsonar.exclusions=src/test/java/**/* -Dsonar.tests=src/test/java -X 
+        mvn -B test -Pcoverage verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        -Dsonar.projectKey="demo:java-security" \
+        -Dsonar.projectName="Java Web App" \
+        -Dsonar.branch.name="${{ github.head_ref || github.ref_name }}" \
+        -Dsonar.javaOpts="-Xmx8192m " \
+        -Dsonar.scanner.debug="true" \
+        -Dsonar.sources="." \
+        -Dsonar.exclusions="src/test/java/**/*" \
+        -Dsonar.tests="src/test/java" \
+        -X
 
     - name: SonarQube Pull Request Analysis
       if: ${{ github.event_name == 'pull_request' }}
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}    # Needed to get PR information, if any
-        SONAR_TOKEN: ${{ secrets.SONARQUBE_CLOUD_TOKEN }}
-        SONAR_HOST_URL: ${{ secrets.SONARQUBE_CLOUD_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
       run: |
-        mvn -B test -Pcoverage verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.pullrequest.key=${{ github.event.pull_request.number }} -Dsonar.pullrequest.base=${{ github.event.pull_request.base.ref }} -Dsonar.pullrequest.branch=${{ github.head_ref }} -Dsonar.javaOpts=-Xmx8192m  -Dsonar.scanner.debug=true -Dsonar.sources=. -Dsonar.exclusions=src/test/java/**/* -Dsonar.tests=src/test/java -X 
+        mvn -B test -Pcoverage verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+        -Dsonar.projectKey="demo:java-security" \
+        -Dsonar.projectName="Java Web App" \
+        -Dsonar.pullrequest.key="${{ github.event.pull_request.number }}" \
+        -Dsonar.pullrequest.base="${{ github.event.pull_request.base.ref }}" \
+        -Dsonar.pullrequest.branch="${{ github.head_ref }}" \
+        -Dsonar.javaOpts="-Xmx8192m " \
+        -Dsonar.scanner.debug="true" \
+        -Dsonar.sources="." \
+        -Dsonar.exclusions="src/test/java/**/*" \
+        -Dsonar.tests="src/test/java" \
+        -X
 
     # Optional: Uploads the full dependency graph to GitHub to improve the quality of Dependabot alerts this repository can receive
     #- name: Update dependency graph
